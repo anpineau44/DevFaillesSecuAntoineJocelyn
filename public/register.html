@@ -5,16 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Créer un utilisateur</title>
+    <script>
+        // Fonction pour échapper les caractères spéciaux (protection JavaScript)
+        function escapeHTML(string) {
+            return string.replace(/[&<>"']/g, function (match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[match];
+            });
+        }
+
+        // Empêcher l'injection XSS en affichant les entrées proprement
+        function validateForm(event) {
+            let username = document.getElementById("username").value;
+            document.getElementById("username").value = escapeHTML(username);
+        }
+    </script>
 </head>
 
 <body>
     <h1>Créer un nouvel utilisateur</h1>
-    <form action="/register" method="POST">
+    <form action="/register" method="POST" onsubmit="validateForm(event)">
         <label for="username">Nom d'utilisateur :</label>
-        <input type="text" id="username" name="username" required><br><br>
+        <input type="text" id="username" name="username" required maxlength="30"><br><br>
 
         <label for="password">Mot de passe :</label>
-        <input type="password" id="password" name="password" required><br><br>
+        <input type="password" id="password" name="password" required minlength="6"><br><br>
 
         <button type="submit">Créer un utilisateur</button>
     </form>

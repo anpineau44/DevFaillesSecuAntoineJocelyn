@@ -1,23 +1,32 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vulnerable App</title>
+    <title>Application Sécurisée</title>
     <link rel="stylesheet" href="styles.css">
     <script src="script.js" defer></script>
+    
+    <!-- 🔒 Ajout de Content Security Policy pour empêcher les injections XSS -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
 </head>
+
 <body>
-    <h1>Vulnerable Login</h1>
-    <form action="/login" method="POST">
-        <label>Nom d'utilisateur:</label>
-        <input type="text" name="username">
-        <label>Mot de passe:</label>
-        <input type="password" name="password">
+    <h1>Connexion Sécurisée</h1>
+
+    <form action="/login" method="POST" onsubmit="sanitizeForm(event)">
+        <label for="username">Nom d'utilisateur:</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Mot de passe:</label>
+        <input type="password" id="password" name="password" required minlength="6">
+
         <button type="submit">Se connecter</button>
     </form>
 
     <h2>Profil</h2>
-    <a href="/profile">Voir mon profil</a>
+    <a href="/profile" id="profileLink">Voir mon profil</a>
 </body>
+
 </html>

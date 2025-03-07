@@ -1,5 +1,6 @@
 const express = require("express");
 const sql = require("mssql");
+const bcrypt = require("bcryptjs"); // 🔐 Ajout de bcryptjs pour le hachage des mots de passe
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -35,14 +36,20 @@ app.post("/login", async (req, res) => {
     try {
         const request = new sql.Request();
         request.input("username", sql.VarChar, username);
-        request.input("password", sql.VarChar, password); // Mot de passe en clair (comme demandé)
         
-        const result = await request.query("SELECT id, username FROM users WHERE username = @username AND password = @password");
+        const result = await request.query("SELECT id, username, password FROM users WHERE username = @username");
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
-            req.session.user = { id: user.id, username: user.username };
-            res.redirect(`/profile?id=${user.id}`);
+
+            const match = await bcrypt.compare(password, user.password);
+
+            if (match) {
+                req.session.user = { id: user.id, username: user.username };
+                res.redirect(`/profile?id=${user.id}`);
+            } else {
+                res.send("Identifiants incorrects");
+            }
         } else {
             res.send("Identifiants incorrects");
         }
@@ -60,9 +67,11 @@ app.post("/register", async (req, res) => {
     }
 
     try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const request = new sql.Request();
         request.input("username", sql.VarChar, username);
-        request.input("password", sql.VarChar, password); 
+        request.input("password", sql.VarChar, hashedPassword); 
 
         await request.query("INSERT INTO users (username, password) VALUES (@username, @password)");
 
@@ -87,7 +96,7 @@ app.get("/profile", async (req, res) => {
         const request = new sql.Request();
         request.input("userId", sql.Int, userId);
 
-        const result = await request.query("SELECT * FROM users WHERE id = @userId");
+        const result = await request.query("SELECT id, username FROM users WHERE id = @userId");
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];

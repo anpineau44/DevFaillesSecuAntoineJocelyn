@@ -3,6 +3,7 @@ const sql = require("mssql");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
+const { randomUUID } = require("crypto");
 
 const app = express();
 const port = 3000;
@@ -61,10 +62,11 @@ app.post("/register", async (req, res) => {
 
     try {
         const request = new sql.Request();
+        request.input("id", sql.Char(36), randomUUID());
         request.input("username", sql.VarChar, username);
         request.input("password", sql.VarChar, password); 
 
-        await request.query("INSERT INTO users (username, password) VALUES (@username, @password)");
+        await request.query("INSERT INTO users (username, password) VALUES (@id, @username, @password)");
 
         res.send(`
             <h1>Utilisateur créé avec succès !</h1>

@@ -25,3 +25,19 @@ Pour vérifier que SQL Server accepte les connexions TCP/IP :
 - Redémarre SQL Server
 
 Exécuter SCRIPT.sql pour créer la base de données.
+
+-------------------------------------------------------
+## Edit par Arthur TITOS
+- Après de nombreuses tentatives, la connection au serveur SQL est toujours en timeout.
+La configuration de l'user est la suivante : 
+```bash
+Server name : MSSQLSERVER2
+Login : Both Windows / SQL
+Protocole réseau : TCP/IP actif
+User Name : userTest
+Password : oui123
+Droits : System Admin / Possibilité de se connecté en SQL
+trustServerCertificate : true
+```
+- De plus la connexion via l'outil SSMS est possible avec l'utilisateur.
+- Donc les corrections sont donnés sans être testé intégralement

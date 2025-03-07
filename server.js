@@ -1,6 +1,6 @@
 const express = require("express");
 const sql = require("mssql");
-const bcrypt = require("bcryptjs"); // 🔐 Ajout de bcryptjs pour le hachage des mots de passe
+const bcrypt = require("bcryptjs"); 
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");

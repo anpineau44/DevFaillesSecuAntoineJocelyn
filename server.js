@@ -1,6 +1,6 @@
 const express = require("express");
 const sql = require("mssql");
-const bcrypt = require("bcryptjs"); // 🔐 Ajout de bcryptjs pour le hachage des mots de passe
+const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
@@ -25,6 +25,11 @@ app.use(session({ secret: "vulnerableSecret", resave: false, saveUninitialized: 
 app.use(express.static("public"));
 
 app.set("view engine", "ejs");
+
+function validatePassword(password) {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+}
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/public/index.html");
@@ -66,12 +71,27 @@ app.post("/register", async (req, res) => {
         return res.send("Tous les champs sont obligatoires !");
     }
 
+    if (!validatePassword(password)) {
+        return res.send(`
+            <h1>Mot de passe non sécurisé !</h1>
+            <p>Le mot de passe doit contenir au moins :</p>
+            <ul>
+                <li>8 caractères</li>
+                <li>1 lettre majuscule</li>
+                <li>1 lettre minuscule</li>
+                <li>1 chiffre</li>
+                <li>1 caractère spécial (@$!%*?&)</li>
+            </ul>
+            <p><a href="/register">Réessayer</a></p>
+        `);
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const request = new sql.Request();
         request.input("username", sql.VarChar, username);
-        request.input("password", sql.VarChar, hashedPassword); 
+        request.input("password", sql.VarChar, hashedPassword);
 
         await request.query("INSERT INTO users (username, password) VALUES (@username, @password)");
 

@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const csrf = require("csurf"); 
+const crypto = require("crypto");
 
 const app = express();
 const port = 3000;
@@ -18,11 +19,13 @@ const dbConfig = {
     options: { encrypt: false }
 };
 
+
+
 sql.connect(dbConfig).catch(err => console.error("Erreur connexion BDD", err));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(session({ secret: "vulnerableSecret", resave: false, saveUninitialized: true }));
+app.use(session({secret: crypto.randomBytes(64).toString("hex"), resave: false,saveUninitialized: true}));
 app.use(express.static("public"));
 
 app.set("view engine", "ejs");

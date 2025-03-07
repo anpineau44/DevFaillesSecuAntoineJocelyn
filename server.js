@@ -1,9 +1,10 @@
 const express = require("express");
 const sql = require("mssql");
-const bcrypt = require("bcryptjs"); 
+const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const cookieParser = require("cookie-parser");
+const csrf = require("csurf"); 
 
 const app = express();
 const port = 3000;
@@ -26,8 +27,16 @@ app.use(express.static("public"));
 
 app.set("view engine", "ejs");
 
+const csrfProtection = csrf({ cookie: true });
+app.use(csrfProtection);
+
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public/index.html");
+    res.render("login", { csrfToken: req.csrfToken() });
 });
 
 app.post("/login", async (req, res) => {
@@ -36,7 +45,7 @@ app.post("/login", async (req, res) => {
     try {
         const request = new sql.Request();
         request.input("username", sql.VarChar, username);
-        
+
         const result = await request.query("SELECT id, username, password FROM users WHERE username = @username");
 
         if (result.recordset.length > 0) {
@@ -59,6 +68,10 @@ app.post("/login", async (req, res) => {
     }
 });
 
+app.get("/register", (req, res) => {
+    res.render("register", { csrfToken: req.csrfToken() });
+});
+
 app.post("/register", async (req, res) => {
     const { username, password } = req.body;
 
@@ -66,64 +79,24 @@ app.post("/register", async (req, res) => {
         return res.send("Tous les champs sont obligatoires !");
     }
 
+    if (!validatePassword(password)) {
+        return res.send("Mot de passe trop faible !");
+    }
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const request = new sql.Request();
         request.input("username", sql.VarChar, username);
-        request.input("password", sql.VarChar, hashedPassword); 
+        request.input("password", sql.VarChar, hashedPassword);
 
         await request.query("INSERT INTO users (username, password) VALUES (@username, @password)");
 
-        res.send(`
-            <h1>Utilisateur créé avec succès !</h1>
-            <p><a href="/admin">Retour à l'administration</a></p>
-        `);
+        res.send("Utilisateur créé avec succès !");
     } catch (err) {
         console.error("Erreur lors de la création de l'utilisateur", err);
         res.send("Erreur serveur");
     }
-});
-
-app.get("/profile", async (req, res) => {
-    const userId = req.query.id;
-
-    if (!userId) {
-        return res.send("ID utilisateur manquant !");
-    }
-
-    try {
-        const request = new sql.Request();
-        request.input("userId", sql.Int, userId);
-
-        const result = await request.query("SELECT id, username FROM users WHERE id = @userId");
-
-        if (result.recordset.length > 0) {
-            const user = result.recordset[0];
-
-            res.send(`
-                <h1>Bienvenue ${user.username}</h1>
-                <p>Votre ID est ${user.id}</p>
-                <p>Ajoutez un message :</p>
-            `);
-        } else {
-            res.send("Utilisateur non trouvé.");
-        }
-    } catch (err) {
-        console.error("Erreur lors de la récupération des informations de l'utilisateur", err);
-        res.send("Erreur serveur");
-    }
-});
-
-app.get("/register", (req, res) => {
-    res.sendFile(__dirname + "/public/register.html");
-});
-
-app.get("/admin", (req, res) => {
-    res.send(`
-            <h1>Bienvenue dans l'admin !</h1>
-            <p><a href="/register"><button>Créer un nouvel utilisateur</button></a></p>
-        `);
 });
 
 app.listen(port, () => console.log(`Serveur en ligne sur http://localhost:${port}`));

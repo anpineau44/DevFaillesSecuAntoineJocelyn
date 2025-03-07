@@ -25,19 +25,19 @@ app.use(express.static("public"));
 
 app.set("view engine", "ejs");
 
-
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/public/index.html");
 });
 
-
 app.post("/login", async (req, res) => {
     const { username, password } = req.body;
 
-    const query = `SELECT id, username FROM users WHERE username = '${username}' AND password = '${password}'`;
-
     try {
-        const result = await sql.query(query);
+        const request = new sql.Request();
+        request.input("username", sql.VarChar, username);
+        request.input("password", sql.VarChar, password); // Mot de passe en clair (comme demandé)
+        
+        const result = await request.query("SELECT id, username FROM users WHERE username = @username AND password = @password");
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
@@ -59,10 +59,13 @@ app.post("/register", async (req, res) => {
         return res.send("Tous les champs sont obligatoires !");
     }
 
-    const query = `INSERT INTO users (username, password) VALUES ('${username}', '${password}')`;
-
     try {
-        await sql.query(query);
+        const request = new sql.Request();
+        request.input("username", sql.VarChar, username);
+        request.input("password", sql.VarChar, password); 
+
+        await request.query("INSERT INTO users (username, password) VALUES (@username, @password)");
+
         res.send(`
             <h1>Utilisateur créé avec succès !</h1>
             <p><a href="/admin">Retour à l'administration</a></p>
@@ -79,10 +82,12 @@ app.get("/profile", async (req, res) => {
     if (!userId) {
         return res.send("ID utilisateur manquant !");
     }
-    const query = `SELECT * FROM users WHERE id = '${userId}'`;
 
     try {
-        const result = await sql.query(query);
+        const request = new sql.Request();
+        request.input("userId", sql.Int, userId);
+
+        const result = await request.query("SELECT * FROM users WHERE id = @userId");
 
         if (result.recordset.length > 0) {
             const user = result.recordset[0];
@@ -110,24 +115,6 @@ app.get("/admin", (req, res) => {
             <h1>Bienvenue dans l'admin !</h1>
             <p><a href="/register"><button>Créer un nouvel utilisateur</button></a></p>
         `);
-});
-
-app.post("/register", async (req, res) => {
-    const { username, password } = req.body;
-
-    if (!username || !password) {
-        return res.send("Tous les champs sont obligatoires !");
-    }
-
-    const query = `INSERT INTO users (username, password, email) VALUES ('${username}', '${password}')`;
-
-    try {
-        await sql.query(query);
-        res.send("Utilisateur créé avec succès !");
-    } catch (err) {
-        console.error("Erreur lors de la création de l'utilisateur", err);
-        res.send("Erreur serveur");
-    }
 });
 
 app.listen(port, () => console.log(`Serveur en ligne sur http://localhost:${port}`));
